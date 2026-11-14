@@ -4,12 +4,12 @@ import { useState } from 'react'
 import { ArrowUpRight, Check, Copy } from 'lucide-react'
 import { SectionHeading } from '@/components/section-heading'
 
-const EMAIL = 'hello@jordanlee.dev'
+const EMAIL = 'andrewkim1210@gmail.com'
 
 const socials = [
-  { label: 'GitHub', href: 'https://github.com' },
-  { label: 'LinkedIn', href: 'https://linkedin.com' },
-  { label: 'Resume (PDF)', href: '#' },
+  { label: 'Instagram', href: 'https://www.instagram.com/andrew_k.build/' },
+  { label: 'LinkedIn', href: 'https://www.linkedin.com/in/andrewk25/' },
+  { label: 'Request resume', href: '/resume' },
 ]
 
 export function Contact() {
@@ -27,11 +27,11 @@ export function Contact() {
 
   return (
     <section id="contact" aria-labelledby="contact-title" className="py-24">
-      <SectionHeading index="04" title="Contact" id="contact-title" />
+      <SectionHeading index="05" title="Contact" id="contact-title" />
       <div className="grid gap-10 md:grid-cols-[1.4fr_1fr] md:items-end">
-        <div>
+        <div data-reveal>
           <p className="max-w-xl text-balance text-3xl font-medium leading-tight tracking-tight sm:text-4xl">
-            Have a hard problem with moving parts? Let&apos;s talk.
+            Open to internships and collaborations.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <a
@@ -57,7 +57,7 @@ export function Contact() {
             </button>
           </div>
         </div>
-        <ul className="flex flex-col border-t">
+        <ul data-reveal className="flex flex-col border-t">
           {socials.map((s) => (
             <li key={s.label} className="border-b">
               <a

@@ -16,7 +16,7 @@ export function Projects() {
 
   return (
     <section id="projects" aria-labelledby="projects-title" className="py-24">
-      <SectionHeading index="02" title="Selected Projects" id="projects-title" />
+      <SectionHeading index="03" title="Selected Projects" id="projects-title" />
 
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">Open a project for the full technical write-up.</p>
@@ -44,7 +44,7 @@ export function Projects() {
         </div>
       </div>
 
-      <ul className="grid gap-4 md:grid-cols-2">
+      <ul data-reveal-grid className="grid gap-4 md:grid-cols-2">
         {visible.map((project) => (
           <ProjectCard key={project.slug} project={project} index={projects.indexOf(project) + 1} />
         ))}

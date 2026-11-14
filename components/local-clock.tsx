@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 
-const TIME_ZONE = 'America/Los_Angeles'
+const TIME_ZONE = 'America/Vancouver'
 
 const formatter = new Intl.DateTimeFormat('en-US', {
   timeZone: TIME_ZONE,

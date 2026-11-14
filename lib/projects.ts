@@ -1,4 +1,11 @@
-export type Discipline = 'Hardware' | 'Software' | 'Mechanical'
+export type Discipline =
+  | 'Hardware'
+  | 'Software'
+  | 'Mechanical'
+  | 'Mechanical design'
+  | 'CAD'
+  | 'Prototyping'
+  | 'Engineering design process'
 
 export type Project = {
   slug: string
@@ -13,101 +20,343 @@ export type Project = {
   goal: string[]
   role: { summary: string; contributions: string[] }
   decisions: { title: string; detail: string }[]
-  debugging: { problem: string; investigation: string; fix: string }[]
+  debugging: {
+    problem: string
+    investigation: string
+    fix: string
+    image?: { src: string; alt: string; caption: string }
+  }[]
   result: { summary: string; nextTime: string[] }
-  metrics: { label: string; value: string }[]
+  specs?: { label: string; value: string }[]
   visuals: { src: string; alt: string; caption: string }[]
   stack: string[]
   links: { label: string; href: string }[]
+  hearIt?:
+    | { type: 'audio' | 'video'; src: string; caption: string }
+    | { type: 'youtube'; videoId: string; title: string; caption: string }
+  signalChain?: string[]
 }
 
 export const projects: Project[] = [
   {
-    slug: 'atlas-rover',
-    title: 'Atlas Rover',
-    summary: 'Six-wheel autonomous rover for outdoor mapping.',
-    year: '2025',
-    duration: '8 months',
-    team: '4 engineers',
-    disciplines: ['Hardware', 'Software', 'Mechanical'],
-    image: '/projects/rover.png',
-    imageAlt: 'Six-wheeled robotic rover with an aluminum chassis and a lidar sensor on top',
+    slug: 'snoopy-distortion',
+    title: 'Snoopy Distortion',
+    summary: 'An op-amp distortion pedal I simulated, breadboarded, laid out in KiCad, and built into a custom-printed enclosure, while documenting every stage as a video series.',
+    year: '2026',
+    duration: '5 months',
+    team: 'Solo',
+    disciplines: ['Hardware', 'Mechanical'],
+    image: '/projects/snoopy-distortion/pedal%20front.jpg',
+    imageAlt: 'Finished Snoopy Distortion pedal in its white custom-printed enclosure',
     goal: [
-      'Field teams surveying uneven terrain were spending most of their day walking transects with handheld GPS units. The goal was a low-cost platform that could map a site unsupervised and return a usable point cloud by the end of the day.',
-      'Hard constraints: under $2,000 in parts, at least 3 km of range per charge, and repairable in the field with hand tools.',
+      "I’m an electrical engineering student who had never designed an analog audio circuit. I wanted to build a guitar pedal from scratch, designing each stage myself rather than copying a schematic or using a kit.",
+      "My sound goal was distortion with clarity and definition that still felt warm and open, with the ProCo RAT as my reference for the architecture.",
+      "I also set myself a documentation goal: record the whole process as a short-form video series, including the mistakes."
     ],
     role: {
-      summary:
-        'Lead engineer on a team of four. I owned the chassis design and the navigation stack, and coordinated integration across the electrical and software subteams.',
-      contributions: [
-        'Designed the rocker-bogie suspension and drivetrain in SolidWorks',
-        'Wrote the ROS 2 terrain-cost layer and the local planner tuning',
-        'Built the wheel odometry and IMU fusion pipeline',
-        'Ran weekly field tests and kept the shared failure log',
-      ],
+      summary: 'TODO: Add a summary of your role on the project.',
+      contributions: ['TODO: Add your project contributions.'],
     },
     decisions: [
       {
-        title: 'Rocker-bogie over a skid-steer chassis',
+        title: 'True bypass with a 3PDT footswitch',
         detail:
-          'A skid-steer chassis was simpler to build, but in early tests it lost traction on loose gravel and dragged its wheels through turns, which corrupted the odometry. Rocker-bogie keeps all six wheels in contact without springs, so the wheel-encoder data stayed trustworthy.',
+          'The 3PDT footswitch leaves the signal untouched when the pedal is off.',
       },
       {
-        title: '2D lidar + odometry instead of 3D lidar',
+        title: 'Board-mounted pots and an off-board LED',
         detail:
-          'A 3D lidar alone would have used about 60% of the budget. A tilted 2D lidar fused with wheel odometry and an IMU gave enough coverage for terrain mapping at a fraction of the cost, at the price of a slower scan rate.',
+          'Board-mounted pots set the PCB width to the enclosure’s approximately 43 mm internal cavity, so the layout needed vertical components. I wired the LED off-board to reduce drilling-tolerance risk.',
       },
       {
-        title: 'Custom terrain-cost layer',
+        title: 'Custom 1590B enclosure and panel',
         detail:
-          'The default Nav2 costmaps treat the world as flat. I added a layer that scores slope and roughness from the point cloud, so the planner prefers gentle grades even when they mean a longer path.',
+          'The white 1590B has custom drilling and UV printing from Tayda. I added 0.4 mm to every hole diameter because powder coat is applied after drilling. The artwork is an original dog-ear design.',
       },
     ],
+    signalChain: ['Input', 'TL072 gain stage', 'Diode clipping', 'Tone', 'Volume', 'Output'],
     debugging: [
       {
-        problem: 'The map drifted by roughly 2 m over a 500 m loop.',
+        problem: 'No distortion in simulation.',
         investigation:
-          'Logging raw encoder ticks against GPS showed the drift was worst on soft ground. The middle wheels were slipping during turns and the odometry was counting that slip as forward travel.',
-        fix: 'Weighted the middle wheels lower in the odometry model during turns and raised the IMU yaw weight in the EKF. Loop-closure error dropped below 10 cm.',
+          'The signal sounded clean in Reaper. I traced the circuit and found the diodes and speaker both wired from the op-amp output to ground, so the signal reached the speaker without passing through the clipping stage. My second attempt also had both diodes facing the same way.',
+        fix: 'Put the clipping stage in the signal path and make the diodes anti-parallel.',
       },
       {
-        problem: 'The Jetson would randomly brown out on steep climbs.',
+        problem: 'Asymmetric, weak clipping on the breadboard.',
         investigation:
-          'A scope on the 5 V rail showed 600 mV dips whenever the drive motors pulled peak current. The compute and motor rails shared a ground return.',
-        fix: 'Split the compute supply onto its own isolated DC-DC converter and added bulk capacitance near the motor drivers. There have been no brownouts since.',
+          'The diodes were ground-referenced, but the op-amp output sat at about 4.5 V DC. Only one diode ever conducted, so sustain was poor.',
+        fix: 'Add a 1 µF coupling capacitor before the diode junction so the diodes clip symmetrically.',
+      },
+      {
+        problem: 'Squealing at high gain.',
+        investigation:
+          'The first prototype squealed because long jumper wires were acting as antennas and feeding RF into the op amp. Later, squeal at high gain came from the unused half of the TL072 being left floating, plus too much loop gain at the top of the 1M gain pot.',
+        fix: 'Use shorter wires and tie off the unused op-amp half (pins 1 and 2 shorted, pin 3 to ground). A 1M resistor in parallel with the gain pot caps its effective maximum at about 500k.',
+      },
+      {
+        problem: '60 Hz hum.',
+        investigation:
+          'The hum changed when I unplugged a nearby lamp, got louder when I touched the DC jack, dropped with a grounded foil shield, and had a clean 60 Hz tone.',
+        fix: 'The grounded metal enclosure eliminated it.',
+      },
+      {
+        problem: 'I ordered the wrong PCB revision.',
+        investigation:
+          'After v1 arrived, I realized the coupling capacitor (C4) needed to sit before the clipping diodes, not after. A re-order would have meant weeks of waiting.',
+        fix: 'Hand-modified v1 with bodge wires, soldering pad-to-pad where the component legs were too fragile. It cost me time but noticeably improved my soldering.',
+      },
+      {
+        problem: 'The DC jack stopped delivering power.',
+        investigation: 'A lug bent and broke while I was fitting the jack into the enclosure.',
+        fix: 'I identified the legs with an LED continuity tester and rewired it.',
       },
     ],
     result: {
       summary:
-        'Completed a 4 km unsupervised mapping run with sub-10 cm loop-closure error, at about a third of the cost of comparable commercial platforms. The field team now uses it weekly.',
+        'The finished pedal works and lives in a custom-printed enclosure. The 60 Hz hum is gone, and the squeal is resolved for the gain knob. TODO: Describe the finished pedal’s sound. TODO: Confirm whether the volume-knob fix is verified and update this summary.',
       nextTime: [
-        'Use sealed connectors from day one, because dust caused two intermittent faults',
-        'Design the battery swap to work without tools',
-        'Add a cheap stereo camera for visual odometry as a backup on featureless terrain',
+        'Check the schematic against the PCB layout before ordering boards, so I do not pay for a wrong revision',
+        'Experiment with a small capacitor across the clipping diodes to soften fizz',
+        'Order the PCBs, enclosure, and parts earlier so the build is not limited by shipping',
       ],
     },
-    metrics: [
-      { label: 'Range', value: '4 km' },
-      { label: 'Map error', value: '<10 cm' },
-      { label: 'BOM cost', value: '$1.8k' },
+    specs: [
+      { label: 'Supply', value: '9V DC, center-negative' },
+      { label: 'Op-amp', value: 'TL072' },
+      { label: 'Controls', value: 'Gain, Tone, Volume' },
+      { label: 'Bypass', value: 'True bypass (3PDT)' },
+      { label: 'Board', value: '2-layer PCB, about 50 × 45 mm, 2 revisions' },
+      { label: 'Build', value: 'May to TODO: month 2026' },
     ],
     visuals: [
       {
-        src: '/projects/rover.png',
-        alt: 'Atlas Rover on a studio backdrop',
-        caption: 'Final build with the tilted lidar mount and the field-swappable battery bay.',
+        src: '/projects/snoopy-distortion/pedal%20front.jpg',
+        alt: 'Finished Snoopy Distortion pedal in its white custom-printed enclosure',
+        caption: 'Final pedal front panel.',
       },
       {
-        src: '/projects/rover-map.png',
-        alt: 'Top-down terrain map with a colored traversability overlay and a planned path',
-        caption: 'Terrain-cost overlay from the field test. Warmer cells are steeper or rougher.',
+        src: '/projects/snoopy-distortion/v2%20schematic.png',
+        alt: 'Version 2 KiCad schematic for the Snoopy Distortion pedal',
+        caption: 'Updated KiCad schematic.',
+      },
+      {
+        src: '/projects/snoopy-distortion/pedal%20back.jpeg',
+        alt: 'Inside the finished pedal, showing the circuit board and footswitch wiring',
+        caption: 'Inside the finished pedal enclosure.',
+      },
+      {
+        src: '/projects/snoopy-distortion/pcb.png',
+        alt: 'Top view of the Snoopy Distortion printed circuit board layout',
+        caption: 'PCB layout (top view).',
+      },
+      {
+        src: '/projects/snoopy-distortion/pcb%203d%20viewer.png',
+        alt: 'Three-dimensional render of the Snoopy Distortion circuit board with components',
+        caption: '3D view of the PCB.',
       },
     ],
-    stack: ['ROS 2', 'C++', 'SolidWorks', 'Lidar SLAM', 'Jetson Orin'],
-    links: [
-      { label: 'Source', href: '#' },
-      { label: 'Demo video', href: '#' },
+    stack: [
+      'LiveSPICE',
+      'Reaper',
+      'KiCad',
+      'Inkscape',
+      'Stompbox Layout Editor',
+      'PCBWay',
+      'Tayda',
     ],
+    links: [
+      { label: 'TODO: Add video series URL', href: '#' },
+      { label: 'TODO: Add demo clip URL', href: '#' },
+    ],
+  },
+  {
+    slug: 'lead-pipe-extraction-robot',
+    title: 'Lead Pipe Extraction Robot',
+    summary:
+      'A compact robot concept that travels inside a narrow service line, cuts the lead pipe from the inside, and pulls the segments out, so municipalities can replace aging lead service lines with minimal excavation.',
+    year: 'TODO: Add year',
+    duration: 'TODO: Add duration',
+    team: 'TODO: Add team size (team project)',
+    disciplines: ['Mechanical design', 'CAD', 'Prototyping', 'Engineering design process'],
+    image: '/projects/lead-extraction/Side%20view%20of%20our%20final%20prototype%2C%20with%20all%20subsystems%20integrated.png',
+    imageAlt: 'Side view of our final prototype, with all subsystems integrated',
+    goal: [
+      'Concerns about lead contamination in drinking water make replacing lead service lines a priority, but current methods are labour-intensive, disruptive, and costly.',
+      'Our goal was to design a compact device that could travel through a pipe and remove segments with minimal excavation.',
+    ],
+    role: {
+      summary: 'TODO: State your role on the team.',
+      contributions: ['TODO: List what you personally did.'],
+    },
+    decisions: [
+      {
+        title: 'Followed the engineering design cycle',
+        detail:
+          'We started by researching the health risks and existing replacement methods, identified stakeholders, and turned their needs into design specifications.',
+      },
+      {
+        title: 'Wide ideation, then structured screening',
+        detail:
+          'We generated ideas through brainstorming and creative techniques such as C-sketching, screened out impractical ideas or those that missed requirements, then ranked what remained using individual voting, pairwise comparison, and criterion-based ranking.',
+      },
+      {
+        title: 'Robot-assisted removal over two alternatives',
+        detail:
+          'Our top three were pipe pulling with resin, melt and vacuum, and robot-assisted pipe removal. We scored them in a weighted decision matrix, built low-fidelity prototypes, and assessed risks. Robot-assisted removal had the best overall balance of safety, speed, and cost.',
+      },
+      {
+        title: 'Two-carriage hinge for movement',
+        detail:
+          'We started with a simple rigid body. Early CAD tests showed it jammed on curves, so we moved to a two-carriage hinge that lets the robot take tight bends while keeping the wheels in contact with the pipe and staying stable.',
+      },
+      {
+        title: '360 degree rotating cutting arm',
+        detail:
+          'A Dremel cutoff-wheel test on stainless steel, a harder metal than lead, confirmed that cutting was feasible. We adapted that into a virtual rotating arm that cuts the pipe evenly from the inside.',
+      },
+      {
+        title: 'Hook anchoring to hold and extract',
+        detail:
+          'Anchoring started from friction-based cams that grip the pipe’s interior to stabilize the robot while cutting. We then developed a mechanical hook that grips the cut edge for extraction, which gave significantly greater holding force and ensured the robot could pull the pipe out.',
+      },
+      {
+        title: 'Integrated final model',
+        detail:
+          'We combined the movement hinge, telescopic cutting arm, and anchoring hooks, and added a cable reel and a camera, into one virtual model.',
+      },
+    ],
+    debugging: [
+      {
+        problem: 'The first movement design jammed on curves.',
+        investigation:
+          'Early CAD tests of a simple rigid body showed it could not get through bends in a narrow 1-inch pipe.',
+        fix: 'Switched to a two-carriage hinge so the robot navigates tight bends while keeping the wheels in contact and staying stable.',
+        image: {
+          src: '/projects/lead-extraction/CAD%20showing%20robot%27s%20ability%20to%20navigate%20bends%20in%20a%20pipe.png',
+          alt: "CAD showing robot's ability to navigate bends in a pipe",
+          caption: "CAD showing robot's ability to navigate bends in a pipe",
+        },
+      },
+      {
+        problem: 'Cutting would need cooling and dust control.',
+        investigation:
+          'We tested cutting with a Dremel and a cutoff wheel on stainless steel as a stand-in for lead. It confirmed the cut was feasible but exposed the need for cooling and dust control.',
+        fix: 'TODO: Add how cooling and dust control were addressed, or reword this as “identified and carried into the design as a requirement”.',
+        image: {
+          src: '/projects/lead-extraction/Physical%20testing%20-%20cutting%20stainless%20steel.jpg',
+          alt: 'Physical testing - cutting stainless steel',
+          caption: 'Physical testing - cutting stainless steel',
+        },
+      },
+      {
+        problem: "Friction-based anchoring wasn't strong enough for extraction.",
+        investigation:
+          'TODO: Confirm whether the cam anchor was inspired by friction cams and the hook was later found to hold much better.',
+        fix: 'Developed a mechanical hook that grips the cut edge of the pipe, with significantly greater holding force.',
+        image: {
+          src: '/projects/lead-extraction/CADs%20of%20mechanical%20hook%20mechanism.png',
+          alt: 'CADs of mechanical hook mechanism',
+          caption: 'CADs of mechanical hook mechanism',
+        },
+      },
+    ],
+    result: {
+      summary:
+        'The integrated virtual prototype showed that all components can fit and function together inside a residential service line, making a compact and mechanically feasible lead-pipe extraction robot. It was validated in CAD and with targeted physical tests rather than a full physical build.',
+      nextTime: [
+        'TODO: Replace these suggestions with your own reflections. Suggested topics: build a working physical prototype, test cutting on actual lead, and validate cooling and dust control.',
+      ],
+    },
+    specs: [
+      { label: 'Pipe size', value: '1-inch service line' },
+      {
+        label: 'Subsystems',
+        value: 'Movement hinge, telescopic cutting arm, anchoring hooks, cable reel, camera',
+      },
+      { label: 'Prototype type', value: 'Virtual (CAD) model with targeted physical tests' },
+      { label: 'Course', value: 'APSC_O 169 Design Project' },
+      { label: 'Cost / timeline / other figures', value: 'TODO: Add figures' },
+    ],
+    visuals: [
+      {
+        src: '/projects/lead-extraction/c-sketch.jpg',
+        alt: 'C-sketch drawings from ideation',
+        caption: 'C-sketch drawings from ideation',
+      },
+      {
+        src: '/projects/lead-extraction/Table%20for%20ranking%20solutions%20-%20showcasing%20individual%20voting.png',
+        alt: 'Table for ranking solutions - showcasing individual voting',
+        caption: 'Table for ranking solutions - showcasing individual voting',
+      },
+      {
+        src: '/projects/lead-extraction/Weighted%20Decision%20Matrix.png',
+        alt: 'Weighted Decision Matrix',
+        caption: 'Weighted Decision Matrix',
+      },
+      {
+        src: '/projects/lead-extraction/Low-fidelity%20prototype%20sketch%20of%20pipe%20pulling%20with%20resin.jpg',
+        alt: 'Low-fidelity prototype sketch of pipe pulling with resin',
+        caption: 'Low-fidelity prototype sketch of pipe pulling with resin',
+      },
+      {
+        src: '/projects/lead-extraction/Low-fidelity%20prototype%20sketch%20of%20%20melt%20%26%20vacuum.jpg',
+        alt: 'Low-fidelity prototype sketch of melt & vacuum',
+        caption: 'Low-fidelity prototype sketch of melt & vacuum',
+      },
+      {
+        src: '/projects/lead-extraction/Low-fidelity%20prototype%20sketch%20of%20robotics%20assisted%20removal.jpg',
+        alt: 'Low-fidelity prototype sketch of robotics assisted removal',
+        caption: 'Low-fidelity prototype sketch of robotics assisted removal',
+      },
+      {
+        src: '/projects/lead-extraction/CAD%20of%20robot%27s%20movement%20mechanism.png',
+        alt: "CAD of robot's movement mechanism",
+        caption: "CAD of robot's movement mechanism",
+      },
+      {
+        src: '/projects/lead-extraction/Sketch%20of%20360%C2%B0%20rotating%20cutting%20arm.png',
+        alt: 'Sketch of 360° rotating cutting arm',
+        caption: 'Sketch of 360° rotating cutting arm',
+      },
+      {
+        src: '/projects/lead-extraction/Testing%20a%20physical%20cam.png',
+        alt: 'Testing a physical cam',
+        caption: 'Testing a physical cam',
+      },
+      {
+        src: '/projects/lead-extraction/CAD%20of%20anchoring%20mechanism.png',
+        alt: 'CAD of anchoring mechanism',
+        caption: 'CAD of anchoring mechanism',
+      },
+      {
+        src: '/projects/lead-extraction/Side%20view%20of%20our%20final%20prototype%2C%20with%20all%20subsystems%20integrated.png',
+        alt: 'Side view of our final prototype, with all subsystems integrated',
+        caption: 'Side view of our final prototype, with all subsystems integrated',
+      },
+    ],
+    stack: [
+      'CAD',
+      'C-sketching',
+      'Weighted decision matrix',
+      'Pairwise comparison',
+      'Low-fidelity prototyping',
+      'Physical testing',
+      'TODO: Name the CAD software used',
+    ],
+    links: [
+      {
+        label: 'Project video',
+        href: 'https://www.youtube.com/watch?v=BiK6Y-E3sEA',
+      },
+      { label: 'TODO: Link to the portfolio original write-up, if wanted', href: '#' },
+    ],
+    hearIt: {
+      type: 'youtube',
+      videoId: 'BiK6Y-E3sEA',
+      title: 'Lead Pipe Extraction Robot project video',
+      caption: 'Project video',
+    },
   },
   {
     slug: 'volt-bldc-controller',
@@ -160,7 +409,7 @@ export const projects: Project[] = [
         'Expose a CAN-FD bus for daisy-chaining multiple actuators',
       ],
     },
-    metrics: [
+    specs: [
       { label: 'Peak current', value: '60 A' },
       { label: 'Torque ripple', value: '−38%' },
       { label: 'Footprint', value: '42×42 mm' },
@@ -226,7 +475,7 @@ export const projects: Project[] = [
         'Delivered a frame 22% lighter than the previous design, with its first resonant mode at 410 Hz, well above motor frequencies. The team raced it for a full season.',
       nextTime: ['Run the fixture validation before the part tests, not after'],
     },
-    metrics: [
+    specs: [
       { label: 'Weight', value: '−22%' },
       { label: 'First mode', value: '410 Hz' },
       { label: 'Iterations', value: '14' },
@@ -292,7 +541,7 @@ export const projects: Project[] = [
         'Support over-the-air firmware updates from the start',
       ],
     },
-    metrics: [
+    specs: [
       { label: 'Nodes', value: '30' },
       { label: 'Uptime', value: '12 mo' },
       { label: 'Sleep draw', value: '4 µA' },

@@ -3,29 +3,29 @@ import { SectionHeading } from '@/components/section-heading'
 const groups = [
   {
     title: 'Mechanical',
-    items: ['SolidWorks', 'Fusion 360', 'ANSYS FEA', 'GD&T', 'CNC & 3D printing', 'Sheet metal'],
+    items: ['SolidWorks', 'ANSYS FEA', '3D printing', 'Sheet metal'],
   },
   {
     title: 'Electrical',
-    items: ['KiCad', 'Altium', 'LTspice', 'Motor control', 'Power electronics', 'Oscilloscopes'],
+    items: ['KiCad', 'Altium', 'LTspice', 'Multimeter', 'THT Soldering', 'PCB Assembly', 'Arduino', 'STM32'],
   },
   {
     title: 'Software',
-    items: ['C / C++', 'Rust', 'Python', 'TypeScript', 'ROS 2', 'FreeRTOS'],
+    items: ['Python', 'Java', 'C / C++', 'R'],
   },
   {
     title: 'Tools',
-    items: ['Git', 'Linux', 'MATLAB / Simulink', 'Docker', 'Jira', 'Notion'],
+    items: ['MATLAB / Simulink', 'Git', 'Excel', 'Notion'],
   },
 ]
 
 export function Skills() {
   return (
     <section id="skills" aria-labelledby="skills-title" className="py-24">
-      <SectionHeading index="03" title="Skills & Tools" id="skills-title" />
+      <SectionHeading index="04" title="Skills & Tools" id="skills-title" />
       <div className="grid gap-px overflow-hidden rounded-xl border bg-border sm:grid-cols-2 lg:grid-cols-4">
         {groups.map((group) => (
-          <div key={group.title} className="bg-background p-6">
+          <div key={group.title} data-reveal className="bg-background p-6">
             <h3 className="font-mono text-xs uppercase tracking-wider text-muted-foreground">
               {group.title}
             </h3>

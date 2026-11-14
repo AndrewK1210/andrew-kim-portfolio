@@ -1,10 +1,10 @@
 import type { Metadata } from 'next'
-import Image from 'next/image'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ArrowLeft, ArrowRight, ArrowUpRight } from 'lucide-react'
 import { SiteHeader } from '@/components/site-header'
 import { CaseSection } from '@/components/case-section'
+import { EnlargeableImage } from '@/components/enlargeable-image'
 import { getProject, projects } from '@/lib/projects'
 
 export function generateStaticParams() {
@@ -19,7 +19,7 @@ export async function generateMetadata({
   const { slug } = await params
   const project = getProject(slug)
   if (!project) return {}
-  return { title: `${project.title} — Jordan Lee`, description: project.summary }
+  return { title: `${project.title} — Andrew Kim`, description: project.summary }
 }
 
 export default async function ProjectPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -28,7 +28,9 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
   if (!project) notFound()
 
   const index = projects.indexOf(project)
+  const previous = projects[(index - 1 + projects.length) % projects.length]
   const next = projects[(index + 1) % projects.length]
+  const signalChain = project.signalChain
 
   const meta = [
     { label: 'Year', value: project.year },
@@ -70,16 +72,59 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           </dl>
         </header>
 
-        <div className="relative mt-8 aspect-[16/9] overflow-hidden rounded-xl border bg-muted">
-          <Image
+        <div className="mt-8 overflow-hidden rounded-xl border bg-muted">
+          <EnlargeableImage
             src={project.image || '/placeholder.svg'}
             alt={project.imageAlt}
-            fill
             priority
             sizes="(min-width: 1024px) 1024px, 100vw"
-            className="object-cover"
+            frameClassName="aspect-[16/9]"
           />
         </div>
+
+        {project.hearIt && (
+          <figure className="mt-8 rounded-xl border bg-card p-5">
+            {project.hearIt.type === 'youtube' ? (
+              <div className="relative aspect-video overflow-hidden rounded-lg border bg-muted">
+                <iframe
+                  src={`https://www.youtube-nocookie.com/embed/${project.hearIt.videoId}`}
+                  title={project.hearIt.title}
+                  loading="lazy"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  referrerPolicy="strict-origin-when-cross-origin"
+                  allowFullScreen
+                  className="absolute inset-0 size-full"
+                />
+              </div>
+            ) : project.hearIt.type === 'video' ? (
+              <video
+                src={project.hearIt.src}
+                controls
+                preload="metadata"
+                aria-label={project.hearIt.caption}
+                className="w-full rounded-lg"
+              >
+                Your browser does not support video playback.
+              </video>
+            ) : (
+              <audio
+                src={project.hearIt.src}
+                controls
+                preload="metadata"
+                aria-label={project.hearIt.caption}
+                className="w-full"
+              >
+                Your browser does not support audio playback.
+              </audio>
+            )}
+            <figcaption className="mt-3 text-sm text-muted-foreground">
+              <span className="block font-mono text-[11px] uppercase tracking-wider text-foreground">
+                Demo
+              </span>
+              <span className="mt-1 block">{project.hearIt.caption}</span>
+            </figcaption>
+          </figure>
+        )}
 
         <div className="mt-16 flex flex-col gap-16">
           <CaseSection index="01" title="Problem or goal">
@@ -111,6 +156,33 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
                 </div>
               ))}
             </div>
+            {signalChain && signalChain.length > 0 && (
+              <figure className="mt-8 rounded-lg border bg-muted/40 p-5">
+                <figcaption className="mb-4 font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
+                  Signal chain
+                </figcaption>
+                <ol
+                  aria-label="Signal chain"
+                  className="flex flex-col items-center gap-2 sm:flex-row sm:flex-wrap sm:justify-center"
+                >
+                  {signalChain.map((stage, i) => (
+                    <li key={stage} className="flex items-center gap-2">
+                      <span className="rounded-md border bg-card px-3 py-2 text-center text-sm">
+                        {stage}
+                      </span>
+                      {i < signalChain.length - 1 && (
+                        <span
+                          className="rotate-90 font-mono text-signal sm:rotate-0"
+                          aria-hidden="true"
+                        >
+                          →
+                        </span>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </figure>
+            )}
             <ul className="mt-8 flex flex-wrap gap-1.5" aria-label="Tools used">
               {project.stack.map((s) => (
                 <li key={s} className="rounded-md bg-muted px-2 py-1 font-mono text-xs text-foreground">
@@ -125,6 +197,17 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
               {project.debugging.map((d) => (
                 <div key={d.problem} className="overflow-hidden rounded-lg border bg-card">
                   <p className="border-b bg-muted/50 px-5 py-3 font-medium text-foreground">{d.problem}</p>
+                  {d.image && (
+                    <figure className="px-5 pt-5">
+                      <EnlargeableImage
+                        src={d.image.src || '/placeholder.svg'}
+                        alt={d.image.alt}
+                        sizes="(min-width: 768px) 640px, 100vw"
+                        frameClassName="aspect-video rounded-lg border"
+                      />
+                      <figcaption className="mt-2 text-xs">{d.image.caption}</figcaption>
+                    </figure>
+                  )}
                   <dl className="flex flex-col gap-4 p-5">
                     <div>
                       <dt className="font-mono text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -143,18 +226,25 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           </CaseSection>
 
           <CaseSection index="05" title="Result">
-            <dl className="grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border">
-              {project.metrics.map((m) => (
-                <div key={m.label} className="bg-card p-4">
-                  <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
-                    {m.label}
-                  </dt>
-                  <dd className="mt-1 text-xl font-medium tabular-nums tracking-tight text-foreground sm:text-2xl">
-                    {m.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
+            {project.specs && project.specs.length > 0 && (
+              <>
+                <h3 className="font-mono text-[11px] uppercase tracking-wider text-foreground">
+                  At a glance
+                </h3>
+                <dl className="mt-3 grid grid-cols-3 gap-px overflow-hidden rounded-lg border bg-border">
+                  {project.specs.map((spec) => (
+                    <div key={spec.label} className="bg-card p-4">
+                      <dt className="font-mono text-[10px] uppercase tracking-wider text-muted-foreground">
+                        {spec.label}
+                      </dt>
+                      <dd className="mt-1 text-xl font-medium tabular-nums tracking-tight text-foreground sm:text-2xl">
+                        {spec.value}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </>
+            )}
             <p className="mt-6">{project.result.summary}</p>
             <h3 className="mt-6 font-mono text-[11px] uppercase tracking-wider text-foreground">
               What I&apos;d change next time
@@ -191,16 +281,13 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           <CaseSection index="06" title="Visuals">
             <div className="grid gap-6 sm:grid-cols-2">
               {project.visuals.map((v) => (
-                <figure key={v.src}>
-                  <div className="relative aspect-[4/3] overflow-hidden rounded-lg border bg-muted">
-                    <Image
-                      src={v.src || '/placeholder.svg'}
-                      alt={v.alt}
-                      fill
-                      sizes="(min-width: 768px) 360px, 100vw"
-                      className="object-cover"
-                    />
-                  </div>
+                <figure key={`${v.src}-${v.caption}`}>
+                  <EnlargeableImage
+                    src={v.src || '/placeholder.svg'}
+                    alt={v.alt}
+                    sizes="(min-width: 768px) 360px, 100vw"
+                    frameClassName="aspect-video rounded-lg border"
+                  />
                   <figcaption className="mt-2 text-xs">{v.caption}</figcaption>
                 </figure>
               ))}
@@ -208,18 +295,41 @@ export default async function ProjectPage({ params }: { params: Promise<{ slug: 
           </CaseSection>
         </div>
 
-        <Link
-          href={`/projects/${next.slug}`}
-          className="group mt-24 flex items-center justify-between gap-4 border-t pt-8"
+        <nav
+          aria-label="Project navigation"
+          className="mt-24 grid grid-cols-2 gap-6 border-t pt-8"
         >
-          <span>
-            <span className="block font-mono text-xs text-muted-foreground">Next project</span>
-            <span className="mt-1 block text-2xl font-medium tracking-tight transition-colors group-hover:text-signal">
-              {next.title}
+          <Link
+            href={`/projects/${previous.slug}`}
+            className="group flex items-center justify-start gap-4"
+          >
+            <ArrowLeft
+              className="size-5 shrink-0 transition-transform group-hover:-translate-x-1"
+              aria-hidden="true"
+            />
+            <span>
+              <span className="block font-mono text-xs text-muted-foreground">Previous project</span>
+              <span className="mt-1 block text-xl font-medium tracking-tight transition-colors group-hover:text-signal sm:text-2xl">
+                {previous.title}
+              </span>
             </span>
-          </span>
-          <ArrowRight className="size-5 transition-transform group-hover:translate-x-1" aria-hidden="true" />
-        </Link>
+          </Link>
+          <Link
+            href={`/projects/${next.slug}`}
+            className="group flex items-center justify-end gap-4 text-right"
+          >
+            <span>
+              <span className="block font-mono text-xs text-muted-foreground">Next project</span>
+              <span className="mt-1 block text-xl font-medium tracking-tight transition-colors group-hover:text-signal sm:text-2xl">
+                {next.title}
+              </span>
+            </span>
+            <ArrowRight
+              className="size-5 shrink-0 transition-transform group-hover:translate-x-1"
+              aria-hidden="true"
+            />
+          </Link>
+        </nav>
       </main>
     </>
   )

@@ -20,6 +20,7 @@ export function ProjectCard({ project, index }: { project: Project; index: numbe
   return (
     <li
       ref={cardRef}
+      data-reveal
       onPointerMove={handlePointerMove}
       className="group relative overflow-hidden rounded-xl border bg-card transition-[border-color,box-shadow,transform] duration-300 hover:-translate-y-0.5 hover:border-foreground/25 hover:shadow-[0_8px_30px_-12px_rgb(0_0_0/0.15)]"
     >
